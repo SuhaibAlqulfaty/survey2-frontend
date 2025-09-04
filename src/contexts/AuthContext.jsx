@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('auth_token');
       if (token) {
         try {
+          apiService.setToken(token);
           const userData = await apiService.getUser();
           setUser(userData.user);
           setIsAuthenticated(true);
@@ -29,7 +30,10 @@ export const AuthProvider = ({ children }) => {
           console.error('Auth check failed:', error);
           localStorage.removeItem('auth_token');
           apiService.setToken(null);
+          setIsAuthenticated(false);
         }
+      } else {
+        setIsAuthenticated(false);
       }
       setLoading(false);
     };

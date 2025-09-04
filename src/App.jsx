@@ -16,11 +16,15 @@ import ConsentPrivacy from './components/ConsentPrivacy';
 import './App.css';
 
 const AppContent = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const [currentPage, setCurrentPage] = useState('Dashboard');
   const [showRegister, setShowRegister] = useState(false);
 
+  // Debug logging
+  console.log('AppContent render - isAuthenticated:', isAuthenticated, 'loading:', loading, 'user:', user);
+
   if (loading) {
+    console.log('Showing loading state');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -29,12 +33,15 @@ const AppContent = () => {
   }
 
   if (!isAuthenticated) {
+    console.log('User not authenticated, showing login/register');
     return showRegister ? (
       <Register onSwitchToLogin={() => setShowRegister(false)} />
     ) : (
       <Login onSwitchToRegister={() => setShowRegister(true)} />
     );
   }
+
+  console.log('User authenticated, showing dashboard');
 
   const renderPage = () => {
     switch (currentPage) {
