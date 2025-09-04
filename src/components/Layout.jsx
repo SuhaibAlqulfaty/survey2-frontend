@@ -1,9 +1,15 @@
 import React from 'react';
-import { Search, Bell, User, Menu, BarChart3, FileText, Settings, Users, Zap, CreditCard, Plug, Shield, HelpCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Search, Bell, User, Menu, BarChart3, FileText, Settings, Users, Zap, CreditCard, Plug, Shield, HelpCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const Layout = ({ children, currentPage = 'Dashboard', onPageChange }) => {
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
   const sidebarItems = [
     { icon: BarChart3, label: 'Dashboard', active: currentPage === 'Dashboard' },
     { icon: FileText, label: 'Survey Builder', active: currentPage === 'Survey Builder' },

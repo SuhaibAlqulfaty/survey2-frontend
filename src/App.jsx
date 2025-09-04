@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './components/Login';
+import Register from './components/Register';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import SurveyBuilder from './components/SurveyBuilder';
@@ -12,8 +15,26 @@ import AdminSettings from './components/AdminSettings';
 import ConsentPrivacy from './components/ConsentPrivacy';
 import './App.css';
 
-function App() {
+const AppContent = () => {
+  const { isAuthenticated, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('Dashboard');
+  const [showRegister, setShowRegister] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return showRegister ? (
+      <Register onSwitchToLogin={() => setShowRegister(false)} />
+    ) : (
+      <Login onSwitchToRegister={() => setShowRegister(true)} />
+    );
+  }
 
   const renderPage = () => {
     switch (currentPage) {
@@ -46,6 +67,14 @@ function App() {
     <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
       {renderPage()}
     </Layout>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
