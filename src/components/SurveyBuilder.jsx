@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, GripVertical, Type, CheckSquare, Circle, Star, Calendar, FileText, Image } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Type, CheckSquare, Circle, Star, Calendar, FileText, Image, Save, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import apiService from '../services/api';
 
 const SurveyBuilder = () => {
+  const [survey, setSurvey] = useState({
+    title: 'Customer Satisfaction Survey',
+    description: 'Help us improve our services by sharing your feedback about your recent experience with our company.',
+  });
+  
   const [questions, setQuestions] = useState([
     { id: 1, type: 'text', title: 'What is your name?', required: true },
     { id: 2, type: 'multiple-choice', title: 'How satisfied are you with our service?', options: ['Very Satisfied', 'Satisfied', 'Neutral', 'Dissatisfied', 'Very Dissatisfied'], required: true },
   ]);
+
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
   const questionTypes = [
     { type: 'text', icon: Type, label: 'Text Input' },
@@ -39,6 +48,68 @@ const SurveyBuilder = () => {
     setQuestions(questions.map(q => 
       q.id === id ? { ...q, [field]: value } : q
     ));
+  };
+
+  const saveSurvey = async () => {
+    if (!survey.title.trim()) {
+      setSaveMessage('Please enter a survey title');
+      return;
+    }
+
+    if (questions.length === 0) {
+      setSaveMessage('Please add at least one question');
+      return;
+    }
+
+    // Validate questions
+    const invalidQuestions = questions.filter(q => !q.title.trim());
+    if (invalidQuestions.length > 0) {
+      setSaveMessage('Please fill in all question titles');
+      return;
+    }
+
+    setSaving(true);
+    setSaveMessage('');
+
+    try {
+      // Prepare questions data for API
+      const questionsData = questions.map(q => ({
+        title: q.title,
+        type: q.type === 'multiple-choice' ? 'multiple_choice' : 
+              q.type === 'single-choice' ? 'single_choice' : 
+              q.type === 'long-text' ? 'long_text' : 
+              q.type === 'image' ? 'image_upload' : q.type,
+        required: q.required,
+        options: q.options && q.options.length > 0 ? q.options.filter(opt => opt.trim() !== '') : null
+      }));
+
+      const surveyData = {
+        title: survey.title,
+        description: survey.description,
+        questions: questionsData
+      };
+
+      console.log('Saving survey:', surveyData);
+
+      const response = await apiService.request('/surveys', {
+        method: 'POST',
+        body: JSON.stringify(surveyData)
+      });
+
+      console.log('Survey saved successfully:', response);
+      setSaveMessage('Survey saved successfully!');
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setSaveMessage('');
+      }, 3000);
+
+    } catch (error) {
+      console.error('Failed to save survey:', error);
+      setSaveMessage('Failed to save survey. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const QuestionEditor = ({ question }) => (
@@ -120,10 +191,30 @@ const SurveyBuilder = () => {
           <p className="text-gray-600 mt-1">Create and customize your survey questions.</p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline">Preview</Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">Save Survey</Button>
+          <Button variant="outline">
+            <Eye className="h-4 w-4 mr-2" />
+            Preview
+          </Button>
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={saveSurvey}
+            disabled={saving}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? 'Saving...' : 'Save Survey'}
+          </Button>
         </div>
       </div>
+
+      {saveMessage && (
+        <div className={`p-3 rounded-md ${
+          saveMessage.includes('successfully') 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800'
+        }`}>
+          {saveMessage}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Question Types Sidebar */}
@@ -152,8 +243,17 @@ const SurveyBuilder = () => {
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <h3 className="font-semibold text-gray-900 mb-3">Survey Details</h3>
               <div className="space-y-3">
-                <Input placeholder="Survey Title" defaultValue="Customer Satisfaction Survey" />
-                <Textarea placeholder="Survey Description" rows={3} />
+                <Input 
+                  placeholder="Survey Title" 
+                  value={survey.title}
+                  onChange={(e) => setSurvey(prev => ({ ...prev, title: e.target.value }))}
+                />
+                <Textarea 
+                  placeholder="Survey Description" 
+                  rows={3}
+                  value={survey.description}
+                  onChange={(e) => setSurvey(prev => ({ ...prev, description: e.target.value }))}
+                />
               </div>
             </div>
 
@@ -179,8 +279,8 @@ const SurveyBuilder = () => {
             <h3 className="font-semibold text-gray-900 mb-4">Live Preview</h3>
             <div className="space-y-4 text-sm">
               <div className="p-3 bg-gray-50 rounded">
-                <h4 className="font-medium mb-2">Customer Satisfaction Survey</h4>
-                <p className="text-gray-600 text-xs">Survey description goes here...</p>
+                <h4 className="font-medium mb-2">{survey.title}</h4>
+                <p className="text-gray-600 text-xs">{survey.description}</p>
               </div>
               
               {questions.map((question, index) => (
